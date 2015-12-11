@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <style>
+      /* Labels */
+      .map-marker-label {
+          position: absolute;
+          color: black;
+          font-weight: bold;
+          white-space:nowrap;
+          text-shadow:
+            1px 1px 0 #FFF,
+            -1px -1px 0 #FFF,  
+            1px -1px 0 #FFF,
+            -1px 1px 0 #FFF,
+            1px 1px 0 #FFF;
+      }
+
+      .city-zoom-in { font-size: 14px; }
+    </style>
+
+    <link rel="shortcut icon" href="images/favicon.ico" />
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript" src="https://www.google.com/jsapi?autoload={'modules':[{'name':'visualization','version':'1.1','packages':['corechart']}]}"></script>
+    <!--<script src="https://maps.googleapis.com/maps/api/js?&callback=init_gmap&signed_in=true" async defer></script>-->
+    <script src="https://maps.googleapis.com/maps/api/js?signed_in=true"></script>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script type="text/javascript" src="test_map_support.js"></script>
+  </head>
+
+  <body>
+    <select id="train_number"></select><input type="button" value="Show location" onclick="changeLocation();">
+    <div id='map_area' style="width:1200px;height:800px;"></div>
+  </body>
+</html>
+
+
