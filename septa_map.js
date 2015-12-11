@@ -7,12 +7,14 @@ trainData = [];
 $(function () {
 
 /*
+Took this out so it could work without php running... using hard-coded values from trainJSON.js
     $.ajax(getSeptaParams()).done(function(o) {
 */
         septaJSON = JSON.parse(o);
 
         $.each(septaJSON, function (key, val) {
             date = key;
+            $('#date_label').html("Septa locations as of " + date + ":");
 
             $.each(val, function (key2, val2) {
                 $.each(val2, function (key3, val3) {
@@ -28,7 +30,7 @@ $(function () {
             });
 	    });
 
-        var trainSelect = $('#train_number');
+        var trainSelect = $('#train_selection');
         trainList = [];
         for (var train in trainData) {
             direction = trainData[train].direction;
@@ -40,7 +42,15 @@ $(function () {
                 //trainSelect.append($('<option></option>').val(train).html(optValue));
             }
 	    }
-        $("#train_number").autocomplete({ source: trainList });
+        $("#train_selection").autocomplete({ source: trainList });
+
+        $("#train_selection").val("Search...");
+
+        $("#train_selection").keyup(function(e) {
+            if (e.keyCode == 13) {
+                changeLocation();
+            }
+        })
 
         try {
             init_gmap();
@@ -52,63 +62,72 @@ $(function () {
 
 });
 
-function getSeptaParams(start, end){
-	var septaParams = {
-		type:"POST",
-		url: "quickTest.php"
-	}
-	
-	return septaParams;
+function getSeptaParams(start, end) {
+    var septaParams = {
+        type:"POST",
+        url: "getSeptaLocations.php"
+    }
+    
+    return septaParams;
+}
+
+function focusTrainSearch() {
+    $('#train_selection').val('');
+}
+
+function blurTrainSearch() {
+    if ($('#train_selection').val() == '') {
+       $('#train_selection').val('Search...');
+    }
 }
 
 function init_gmap() {
 
     /* Called when page is first loaded */
 
-        var mapCanvas = document.getElementById('map_area');
-        var mapOptions = {
-            center: new google.maps.LatLng(40.102139, -75.027145),
-            zoom: 12,
-            minZoom: 10,
-            draggable: true,
-            //mapTypeId: google.maps.MapTypeId.SATELLITE,
-            mapTypeControlOptions: {
-                style: google.maps.MapTypeControlStyle.DROPDOWN_MENU
-            },
-            styles: 
-            [{
-                featureType: "all",
-                elementType: "labels",        
-                stylers: [
-                    { visibility: "off" }
-                ]
-            }],
-            zoomControlOptions: {
-                style: google.maps.ZoomControlStyle.LARGE,
-                position: google.maps.ControlPosition.LEFT_TOP
-            },
-            streetViewControlOptions: {
-                position: google.maps.ControlPosition.LEFT_TOP
-            }            
-        }
+    var mapCanvas = document.getElementById('map_area');
+    var mapOptions = {
+        center: new google.maps.LatLng(40.102139, -75.027145),
+        zoom: 12,
+        minZoom: 10,
+        draggable: true,
+        mapTypeControlOptions: {
+            style: google.maps.MapTypeControlStyle.DROPDOWN_MENU
+        },
+        styles: 
+        [{
+            featureType: "all",
+            elementType: "labels",        
+            stylers: [
+                { visibility: "off" }
+            ]
+        }],
+        zoomControlOptions: {
+            style: google.maps.ZoomControlStyle.LARGE,
+            position: google.maps.ControlPosition.LEFT_TOP
+        },
+        streetViewControlOptions: {
+            position: google.maps.ControlPosition.LEFT_TOP
+        }            
+    }
     
-        map = new google.maps.Map(mapCanvas, mapOptions);
+    map = new google.maps.Map(mapCanvas, mapOptions);
 
-        var markerSize = { x: 22, y: 40 };
+    var markerSize = { x: 22, y: 40 };
 
-        google.maps.Marker.prototype.setLabel = function(label) {
+    google.maps.Marker.prototype.setLabel = function(label) {
 
-        markerStyle = "map-marker-label city-zoom-in";
+    markerStyle = "map-marker-label";
 
-        if (label == null) {
-            this.label.text = "";
+    if (label == null) {
+        this.label.text = "";
 	} else {
-            this.label = new MarkerLabel({
-                map: this.map,
-                marker: this,
-                text: label
-            });
-            this.label.div.className = markerStyle;
+        this.label = new MarkerLabel({
+            map: this.map,
+            marker: this,
+            text: label
+        });
+        this.label.div.className = markerStyle;
 	}
         this.label.bindTo('position', this, 'position');
     };
@@ -134,19 +153,13 @@ function init_gmap() {
         }
     });
 
-    infoWindow = new google.maps.InfoWindow({
-        content:'',
-	disableAutoPan: true		
-    });                
-    infoWindowPersist = new google.maps.InfoWindow({
-	disableAutoPan: true
-    });
-
     geocoder = new google.maps.Geocoder();
 } 
 
 function changeLocation() {
-    trainSelected = $('#train_number').val();
+    trainSelected = $('#train_selection').val();
+
+    if (trainSelected == "") return;
 
     leftParenPos = trainSelected.indexOf('(') + 1;
     rightParenPos = trainSelected.indexOf(')');
@@ -157,56 +170,28 @@ function changeLocation() {
     direction = trainData[trainNumber].direction;
     destination = trainData[trainNumber].destination;
     
-    showLatLng(lat, lng, direction + " to " + destination);
+    showLatLng(lat, lng, direction + " to " + destination, trainNumber);
+
+    $('#train_selection').blur();
 }
 
-function centerOnZipCode(zipCode){
-    geocoder.geocode( { 'address': zipCode}, function(results, status) {
-        if (status == google.maps.GeocoderStatus.OK) {
-            latlng = results[0].geometry.location;
-            console.log (latlng);
-            map.setCenter(latlng);
-            map.setZoom(7);
-            //infoWindow.close();
-            infoWindowPersist.setContent('<strong>' + results[0].formatted_address + '</strong>');
-	    infoWindowPersist.setPosition(latlng);
-            infoWindowPersist.open(map);
-        } else {
-            //alert("Geocode was not successful for the following reason: " + status);
-        }
-    });
-}
-
-function showLatLng(latParam, lngParam, labelParam) {
-
-/*
-    for (markerIndex = 0; markerIndex < markers.length; markerIndex++) {
-        markers[markerIndex].setLabel(null);
-        markers[markerIndex].setMap(null);
-    }
-    markers = [];
-*/
+function showLatLng(latParam, lngParam, labelParam, trainNumber) {
 
     var latlng = {lat: latParam, lng: lngParam};
     var image = "Transport-Train-icon.png";
+    var tooltipText = "Train number: " + trainNumber;
 
     var marker = new google.maps.Marker({
         position: latlng,
         map: map,
         icon: image,
-        label: labelParam
+        label: labelParam,
+        title: tooltipText
     });
 
     markers.push(marker);
 
     map.setCenter(latlng);
-
-/* 
-    infoWindowPersist.setContent('<strong>Lat: ' + trainData[trainNumber].lat + ' Lng: ' + trainData[trainNumber].lng + '</strong>');
-    infoWindowPersist.setPosition(latlng);
-    infoWindowPersist.open(map);
-*/
-
 }
 
 function clearMap() {
@@ -216,5 +201,4 @@ function clearMap() {
         markers[markerIndex].setMap(null);
     }
     markers = [];
-
 }
